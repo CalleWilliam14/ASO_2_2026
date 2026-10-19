@@ -1,0 +1,52 @@
+- name: Cargar variables cifradas
+  ansible.builtin.include_vars:
+    file: "{{ role_path }}/vars/vault.yml"
+
+- name: Instalar los paquetes para SAMBA
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ samba_packages }}"
+
+- name: Crear el usuario de sistema para SAMBA
+  ansible.builtin.user:
+    name: "{{ samba_username }}"
+    system: yes
+    shell: /usr/sbin/nologin
+    create_home: no
+    state: present
+
+- name: Verificar si el usuario ya existe en Samba
+  ansible.builtin.command: "pdbedit -L -u '{{ samba_username }}'"
+  register: usuario_existe
+  failed_when: false
+  changed_when: false
+
+- name: Crear usuario en Samba usando variables del rol
+  ansible.builtin.shell: |
+    echo -e "{{ vault_samba_password }}\n{{ vault_samba_password }}" | pdbedit -a -u "{{ samba_username }}"
+  when: usuario_existe.rc != 0
+
+- name: Asegurar que el directorio compartido exista
+  ansible.builtin.file:
+    path: "{{ samba_share_path }}"
+    state: directory
+    owner: "{{ samba_username }}"
+    group: "{{ samba_username }}"
+    mode: '0770' 
+
+- name: Iniciar y habilitar el servicio SAMBA
+  ansible.builtin.service:
+    name: smb
+    state: started
+    enabled: true
+  
+- name: Copiar la plantilla de configuracion
+  ansible.builtin.template:
+    src: smb.conf.j2
+    dest: /etc/samba/smb.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart samba
+
