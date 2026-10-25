@@ -1,0 +1,14 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Instalar Apache
+  zypper:
+    name: apache2
+    state: present
+    disable_recommends: yes
+
+- name: Iniciar servicio Apache
+  systemd:
+    name: apache2
+    state: started
+    enabled: yes
+# tasks file for apache

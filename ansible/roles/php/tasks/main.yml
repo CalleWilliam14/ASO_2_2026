@@ -1,0 +1,17 @@
+#SPDX-License-Identifier: MIT-0
+---
+- name: Instalar paquetes de PHP y PhpMyAdmin
+  zypper:
+    name:
+      - php8
+      - php8-mysql
+      - apache2-mod_php8
+      - phpMyAdmin
+    state: present
+    disable_recommends: yes
+
+- name: Reiniciar Apache para que detecte los módulos de PHP
+  systemd:
+    name: apache2
+    state: restarted
+# tasks file for php
