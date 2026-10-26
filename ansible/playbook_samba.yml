@@ -1,5 +1,0 @@
-- name: Configurar Servidor SAMBA
-  hosts: all
-  roles:
-    - role: sambaserver
-    - postgresql

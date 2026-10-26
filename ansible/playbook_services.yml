@@ -1,0 +1,7 @@
+- name: Configurar Servicios
+  hosts: all
+  roles:
+    - sambaserver
+    - apache
+    - php
+    - postgresql

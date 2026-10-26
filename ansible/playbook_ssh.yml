@@ -1,0 +1,44 @@
+- name: Generar y distribuir clave SSH
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    clave_privada: /root/.ssh/ansible_ed25519
+    clave_publica: /root/.ssh/ansible_ed25519.pub
+
+  tasks:
+    - name: Crear directorio SSH
+      ansible.builtin.file:
+        path: /root/.ssh
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    - name: Generar clave Ed25519 si no existe
+      ansible.builtin.command:
+        argv:
+          - ssh-keygen
+          - -t
+          - ed25519
+          - -f
+          - "{{ clave_privada }}"
+          - -N
+          - ""
+      args:
+        creates: "{{ clave_privada }}"
+
+    - name: Distribuir clave pública a los servidores
+      ansible.builtin.command:
+        argv:
+          - ssh-copy-id
+          - -i
+          - "{{ clave_publica }}"
+          - "-p"
+          - "22"
+          - "root@{{ hostvars[item].ansible_host | default(item) }}"
+      loop: "{{ groups['servers'] }}"
+      register: resultado_copia
+      changed_when: resultado_copia.rc == 0
+

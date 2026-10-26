@@ -1,0 +1,44 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/mariadb
+- name: Instalar los paquetes para MariaDB
+  zypper:
+    name:
+      - mariadb
+      - mariadb-client
+    state: present
+
+- name: Iniciar y habilitar servicio MariaDB
+  ansible.builtin.service:
+    name: mariadb
+    state: started
+    enabled: true
+
+- name: Cambiar contrasenia root de Mariadb
+  ansible.builtin.shell: >
+    mariadb -u root -p"{{ mariadb_root_password }}" -e
+    "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mariadb_root_password }}'; FLUSH PRIVILEGES;"
+ 
+- name: Permitir el acceso remoto al usuario root
+  ansible.builtin.shell: >
+    mariadb -u root -p"{{ mariadb_root_password }}" -e
+    "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '{{ mariadb_root_password }}'; FLUSH PRIVILEGES;"
+
+- name: Permitir el acceso remoto al servidor
+  ansible.builtin.copy:
+    src: 50-server.cnf
+    dest: /etc/my.cnf.d/50-server.cnf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reiniciar mariadb
+
+- name: Habilitar puerto de MariaDB en firewalld
+  ansible.posix.firewalld:
+    port: 3306/tcp
+    state: enabled
+    permanent: yes
+    immediate: yes
+  ignore_errors: true
+
+  

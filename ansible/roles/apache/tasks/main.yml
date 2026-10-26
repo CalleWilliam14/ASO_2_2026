@@ -1,5 +1,6 @@
 #SPDX-License-Identifier: MIT-0
 ---
+# tasks file for apache
 - name: Instalar Apache
   zypper:
     name: apache2
@@ -11,4 +12,13 @@
     name: apache2
     state: started
     enabled: yes
-# tasks file for apache
+
+- name: Permitir servicios HTTP y HTTPS
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop:
+    - http
+    - https

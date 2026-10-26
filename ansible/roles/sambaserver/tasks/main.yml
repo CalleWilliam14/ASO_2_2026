@@ -1,12 +1,10 @@
-- name: Cargar variables cifradas
-  ansible.builtin.include_vars:
-    file: "{{ role_path }}/vars/vault.yml"
-
 - name: Instalar los paquetes para SAMBA
-  ansible.builtin.package:
-    name: "{{ item }}"
+  zypper:
+    name:
+      - samba
+      - samba-client
+      - cifs-utils
     state: present
-  loop: "{{ samba_packages }}"
 
 - name: Crear el usuario de sistema para SAMBA
   ansible.builtin.user:
@@ -24,7 +22,7 @@
 
 - name: Crear usuario en Samba usando variables del rol
   ansible.builtin.shell: |
-    echo -e "{{ vault_samba_password }}\n{{ vault_samba_password }}" | pdbedit -a -u "{{ samba_username }}"
+    echo -e "{{ samba_password }}\n{{ samba_password }}" | pdbedit -a -u "{{ samba_username }}"
   when: usuario_existe.rc != 0
 
 - name: Asegurar que el directorio compartido exista
@@ -34,6 +32,14 @@
     owner: "{{ samba_username }}"
     group: "{{ samba_username }}"
     mode: '0770' 
+
+- name: Permitir servicio Samba en firewalld
+  ansible.posix.firewalld:
+    service: samba
+    state: enabled
+    permanent: yes
+    immediate: yes
+  ignore_errors: true
 
 - name: Iniciar y habilitar el servicio SAMBA
   ansible.builtin.service:
@@ -48,5 +54,5 @@
     owner: root
     group: root
     mode: '0644'
-  notify: restart samba
+  notify: reiniciar samba
 

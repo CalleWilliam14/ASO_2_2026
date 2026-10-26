@@ -1,0 +1,30 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for roles/ftp
+- name: Instalar vsftpd
+  ansible.builtin.package:
+    name: vsftpd
+    state: present
+
+- name: Asegurar que el servicio vsftpd esta habilitado e iniciado
+  ansible.builtin.systemd:
+    name: vsftpd
+    enabled: true
+    state: started
+
+- name: Copiar configuracion de vsftpd
+  ansible.builtin.copy:
+    src: vsftpd.conf
+    dest: /etc/vsftpd.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reiniciar vsftpd
+
+- name: Permitir el servicio FTP en firewalld
+  ansible.posix.firewalld:
+    service: ftp
+    permanent: true
+    state: enabled
+    immediate: true
+  ignore_errors: true
