@@ -1,6 +1,5 @@
 #SPDX-License-Identifier: MIT-0
 ---
----
 # 1. Install postgres & Install postgres connection library (php)
 - name: Instalar paquetes de PostgreSQL y PHP pgsql
   zypper:
@@ -32,6 +31,20 @@
     insertafter: EOF
   notify: Reiniciar PostgreSQL
 
+- name: Forzar MD5 para conexiones locales IPv4
+  lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    regexp: '^host\s+all\s+all\s+127\.0\.0\.1/32\s+ident'
+    line: 'host    all             all             127.0.0.1/32            md5'
+  notify: Reiniciar PostgreSQL
+
+- name: Forzar MD5 para conexiones locales IPv6
+  lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    regexp: '^host\s+all\s+all\s+::1/128\s+ident'
+    line: 'host    all             all             ::1/128                 md5'
+  notify: Reiniciar PostgreSQL
+
 # 3. Set postgres password[cite: 7]
 - name: Establecer contrasena del usuario root de postgres
   become: yes
@@ -56,3 +69,10 @@
     password: "{{ db_password }}"
     priv: ALL
     encrypted: yes
+
+- name: Abrir puerto 5432 en el firewall para PostgreSQL
+  firewalld:
+    port: 5432/tcp
+    permanent: yes
+    state: enabled
+    immediate: yes
