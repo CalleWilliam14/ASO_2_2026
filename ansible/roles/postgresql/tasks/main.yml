@@ -1,0 +1,58 @@
+#SPDX-License-Identifier: MIT-0
+---
+---
+# 1. Install postgres & Install postgres connection library (php)
+- name: Instalar paquetes de PostgreSQL y PHP pgsql
+  zypper:
+    name:
+      - postgresql-server
+      - postgresql-contrib
+      - php-pgsql
+      - python3-psycopg2  # Dependencia para que Ansible maneje la BD
+    state: present
+
+- name: Iniciar y habilitar PostgreSQL (necesario antes de configurarlo)
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+# 2. Configure postgres to allow remote connection and encryption[cite: 7]
+- name: Permitir conexiones remotas en postgresql.conf
+  lineinfile:
+    path: /var/lib/pgsql/data/postgresql.conf
+    regexp: '^#?listen_addresses'
+    line: "listen_addresses = '*'"
+  notify: Reiniciar PostgreSQL
+
+- name: Configurar encriptacion MD5 para accesos remotos en pg_hba.conf
+  lineinfile:
+    path: /var/lib/pgsql/data/pg_hba.conf
+    line: "host    all             all             0.0.0.0/0               md5"
+    insertafter: EOF
+  notify: Reiniciar PostgreSQL
+
+# 3. Set postgres password[cite: 7]
+- name: Establecer contrasena del usuario root de postgres
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    name: postgres
+    password: "{{ postgres_root_password }}"
+
+# 4. Configure new user and database[cite: 7]
+- name: Crear nueva base de datos
+  become: yes
+  become_user: postgres
+  postgresql_db:
+    name: "{{ db_name }}"
+
+- name: Crear nuevo usuario y asignar permisos
+  become: yes
+  become_user: postgres
+  postgresql_user:
+    db: "{{ db_name }}"
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    priv: ALL
+    encrypted: yes
