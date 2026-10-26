@@ -1,0 +1,7 @@
+#SPDX-License-Identifier: MIT-0
+---
+# vars file for postgresql
+postgres_root_password: "mundolibre"
+db_name: "publicaso"
+db_user: "publica"
+db_password: "mundolibre"
